@@ -447,19 +447,19 @@ async function fetchAIRecommendation(detail) {
       }),
     });
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
 
     if (data.recommendation) {
       section.className = '';
       section.innerHTML = `<p class="ai-recommendation">${escapeHtml(data.recommendation)}</p>`;
     } else {
-      throw new Error('empty');
+      throw new Error(data.error || 'empty response');
     }
-  } catch {
+  } catch (e) {
     if (section) {
       section.className = '';
-      section.innerHTML = '<p class="info-text" style="font-size:0.85rem;">AI解説を取得できませんでした。</p>';
+      section.innerHTML = `<p class="info-text" style="font-size:0.85rem;">AI解説を取得できませんでした。（${escapeHtml(e.message)}）</p>`;
     }
   }
 }
