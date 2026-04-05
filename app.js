@@ -5,28 +5,6 @@ const STORAGE_KEY_APIKEY = 'ampmeal_api_key';
 const NEARBY_RADIUS = 1000; // メートル
 const MAX_RESULTS = 5;
 
-// レストランの種類別おすすめメニュー（日本語ラベル）
-const CUISINE_MENU_MAP = {
-  japanese_restaurant: ['刺身盛り合わせ', '天ぷら定食', 'うな重', '懐石料理'],
-  sushi_restaurant: ['おまかせにぎり', '特上寿司', '海鮮丼', 'ちらし寿司'],
-  ramen_restaurant: ['濃厚醤油ラーメン', '豚骨ラーメン', '味噌ラーメン', 'つけ麺'],
-  chinese_restaurant: ['麻婆豆腐', '北京ダック', '点心セット', '炒飯'],
-  italian_restaurant: ['カルボナーラ', 'マルゲリータピザ', 'ボンゴレビアンコ', 'ティラミス'],
-  american_restaurant: ['アンガスバーガー', 'BBQリブ', 'クラムチャウダー', 'NYチーズケーキ'],
-  indian_restaurant: ['バターチキンカレー', 'ナン', 'タンドリーチキン', 'マサラチャイ'],
-  french_restaurant: ['フォアグラのソテー', 'ブフブルギニョン', 'クレームブリュレ', 'エスカルゴ'],
-  korean_restaurant: ['サムギョプサル', 'ビビンバ', 'チャプチェ', 'チヂミ'],
-  thai_restaurant: ['パッタイ', 'トムヤムクン', 'グリーンカレー', 'カオマンガイ'],
-  seafood_restaurant: ['活き造り', 'ロブスター', '魚介のグリル', 'ブイヤベース'],
-  steak_house: ['サーロインステーキ', 'リブアイ', 'フィレミニョン', 'Tボーンステーキ'],
-  cafe: ['シグネチャーラテ', 'アボカドトースト', 'スフレパンケーキ', 'クロワッサン'],
-  bakery: ['クロワッサン', '食パン', 'デニッシュ', 'シュークリーム'],
-  bar: ['クラフトビール', 'ハイボール', 'カクテル', 'おつまみ盛り合わせ'],
-  fast_food_restaurant: ['ハンバーガーセット', 'フライドポテト', 'チキンナゲット', 'アップルパイ'],
-  meal_takeaway: ['日替わり弁当', '唐揚げ弁当', 'のり弁当', 'サンドイッチ'],
-  restaurant: ['本日のおすすめ', 'シェフズスペシャル', '季節の一品', 'デザートセット'],
-};
-
 // Places API タイプ → 日本語
 const TYPE_LABEL = {
   japanese_restaurant: '和食',
@@ -49,33 +27,32 @@ const TYPE_LABEL = {
   restaurant: 'レストラン',
 };
 
-// 曜日ラベル（日本語）
-const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
-
 // ===== アプリ状態 =====
 let userLocation = null;
 let placesService = null;
-let map = null;
+let hiddenMap = null;
+let visibleMap = null;
+let mapMarkers = [];
 
 // ===== DOM 参照 =====
 const $ = (id) => document.getElementById(id);
 
-const settingsBtn = $('settingsBtn');
-const settingsPanel = $('settingsPanel');
-const apiKeyInput = $('apiKeyInput');
-const saveApiKeyBtn = $('saveApiKey');
+const settingsBtn     = $('settingsBtn');
+const settingsPanel   = $('settingsPanel');
+const apiKeyInput     = $('apiKeyInput');
+const saveApiKeyBtn   = $('saveApiKey');
 const closeSettingsBtn = $('closeSettings');
-const locationText = $('locationText');
-const searchBtn = $('searchBtn');
-const loading = $('loading');
-const errorBox = $('errorBox');
-const errorMsg = $('errorMsg');
-const retryBtn = $('retryBtn');
-const results = $('results');
-const modalOverlay = $('modalOverlay');
-const modal = $('modal');
-const modalClose = $('modalClose');
-const modalContent = $('modalContent');
+const locationText    = $('locationText');
+const searchBtn       = $('searchBtn');
+const loading         = $('loading');
+const errorBox        = $('errorBox');
+const errorMsg        = $('errorMsg');
+const retryBtn        = $('retryBtn');
+const resultsEl       = $('results');
+const resultsMap      = $('resultsMap');
+const modalOverlay    = $('modalOverlay');
+const modalClose      = $('modalClose');
+const modalContent    = $('modalContent');
 
 // ===== Service Worker 登録 =====
 if ('serviceWorker' in navigator) {
@@ -109,13 +86,9 @@ settingsPanel.addEventListener('click', (e) => {
 
 saveApiKeyBtn.addEventListener('click', () => {
   const key = apiKeyInput.value.trim();
-  if (!key) {
-    alert('API キーを入力してください。');
-    return;
-  }
+  if (!key) { alert('API キーを入力してください。'); return; }
   saveApiKey(key);
   settingsPanel.classList.add('hidden');
-  // Google Maps API を再読み込み
   loadGoogleMapsAPI();
 });
 
@@ -124,7 +97,6 @@ function loadGoogleMapsAPI() {
   const apiKey = getApiKey();
   if (!apiKey) return;
 
-  // 既存スクリプトを削除
   const existing = document.querySelector('script[data-maps-api]');
   if (existing) existing.remove();
 
@@ -138,13 +110,11 @@ function loadGoogleMapsAPI() {
 
 // Google Maps API ロード完了コールバック
 window.onMapsLoaded = function () {
-  // 非表示の地図を作成（Places サービスに必要）
-  const mapDiv = document.createElement('div');
-  mapDiv.style.display = 'none';
-  document.body.appendChild(mapDiv);
-  map = new google.maps.Map(mapDiv, { center: { lat: 0, lng: 0 }, zoom: 15 });
-  placesService = new google.maps.places.PlacesService(map);
-  console.log('Google Maps API 読み込み完了');
+  const div = document.createElement('div');
+  div.style.display = 'none';
+  document.body.appendChild(div);
+  hiddenMap = new google.maps.Map(div, { center: { lat: 0, lng: 0 }, zoom: 15 });
+  placesService = new google.maps.places.PlacesService(hiddenMap);
 };
 
 // ===== 現在地取得 =====
@@ -169,16 +139,14 @@ function getCurrentLocation() {
   });
 }
 
-// 座標から住所を取得（逆ジオコーディング）
+// 逆ジオコーディング
 function reverseGeocode(lat, lng) {
   return new Promise((resolve) => {
     const geocoder = new google.maps.Geocoder();
     geocoder.geocode({ location: { lat, lng }, language: 'ja' }, (results, status) => {
       if (status === 'OK' && results[0]) {
-        // 都道府県 + 市区町村 + 丁目まで
-        const components = results[0].address_components;
         const parts = [];
-        for (const c of components) {
+        for (const c of results[0].address_components) {
           if (c.types.includes('administrative_area_level_1')) parts.unshift(c.long_name);
           else if (c.types.includes('locality')) parts.push(c.long_name);
           else if (c.types.includes('sublocality_level_2')) parts.push(c.long_name);
@@ -215,112 +183,133 @@ function searchNearbyRestaurants(location) {
       reject(new Error('Google Maps API が読み込まれていません。設定から API キーを確認してください。'));
       return;
     }
-    const request = {
-      location: new google.maps.LatLng(location.lat, location.lng),
-      radius: NEARBY_RADIUS,
-      type: 'restaurant',
-      language: 'ja',
-    };
-    placesService.nearbySearch(request, (results, status) => {
-      if (status === google.maps.places.PlacesServiceStatus.OK) {
-        resolve(results.slice(0, MAX_RESULTS));
-      } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
-        resolve([]);
-      } else {
-        reject(new Error(`レストランの検索に失敗しました。(${status})`));
+    placesService.nearbySearch(
+      { location: new google.maps.LatLng(location.lat, location.lng), radius: NEARBY_RADIUS, type: 'restaurant', language: 'ja' },
+      (places, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK) resolve(places.slice(0, MAX_RESULTS));
+        else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) resolve([]);
+        else reject(new Error(`レストランの検索に失敗しました。(${status})`));
       }
-    });
+    );
   });
 }
 
 // ===== Place Details 取得 =====
 function getPlaceDetails(placeId) {
   return new Promise((resolve, reject) => {
-    const request = {
-      placeId,
-      fields: ['name', 'opening_hours', 'formatted_phone_number', 'website', 'reviews', 'types', 'rating', 'user_ratings_total', 'geometry', 'price_level', 'editorial_summary'],
-      language: 'ja',
-    };
-    placesService.getDetails(request, (place, status) => {
-      if (status === google.maps.places.PlacesServiceStatus.OK) {
-        resolve(place);
-      } else {
-        reject(new Error(`詳細情報の取得に失敗しました。(${status})`));
+    placesService.getDetails(
+      {
+        placeId,
+        fields: ['name', 'opening_hours', 'formatted_phone_number', 'types', 'rating',
+                 'user_ratings_total', 'geometry', 'price_level', 'editorial_summary',
+                 'photos', 'vicinity'],
+        language: 'ja',
+      },
+      (place, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK) resolve(place);
+        else reject(new Error(`詳細情報の取得に失敗しました。(${status})`));
       }
-    });
+    );
   });
 }
 
-// ===== 営業時間フォーマット =====
+// ===== 営業時間 =====
 function formatOpeningHours(openingHours) {
-  if (!openingHours || !openingHours.weekday_text) return null;
+  if (!openingHours?.weekday_text) return null;
   const today = new Date().getDay();
   return openingHours.weekday_text.map((text, i) => {
-    // Google は月曜始まり（0=月）、JS は日曜始まり（0=日）
-    const dayIndex = (i + 1) % 7; // 0=日, 1=月 ... 6=土
+    const dayIndex = (i + 1) % 7;
     return { text, isToday: dayIndex === today };
   });
 }
 
 function getOpenStatus(openingHours) {
   if (!openingHours) return 'unknown';
-  if (typeof openingHours.isOpen === 'function') {
-    return openingHours.isOpen() ? 'open' : 'closed';
-  }
+  if (typeof openingHours.isOpen === 'function') return openingHours.isOpen() ? 'open' : 'closed';
   return 'unknown';
 }
 
-// ===== おすすめメニュー取得 =====
-function getRecommendedMenu(types) {
-  for (const type of (types || [])) {
-    if (CUISINE_MENU_MAP[type]) return CUISINE_MENU_MAP[type];
-  }
-  return CUISINE_MENU_MAP.restaurant;
-}
-
 function getCuisineLabel(types) {
-  for (const type of (types || [])) {
-    if (TYPE_LABEL[type]) return TYPE_LABEL[type];
+  for (const t of (types || [])) {
+    if (TYPE_LABEL[t]) return TYPE_LABEL[t];
   }
   return 'レストラン';
 }
 
+// ===== 地図にピンを表示 =====
+function showResultsMap(placesWithDist) {
+  // 古いマーカーをクリア
+  mapMarkers.forEach((m) => m.setMap(null));
+  mapMarkers = [];
+
+  resultsMap.classList.remove('hidden');
+
+  visibleMap = new google.maps.Map(resultsMap, {
+    center: { lat: userLocation.lat, lng: userLocation.lng },
+    zoom: 15,
+    disableDefaultUI: true,
+    zoomControl: true,
+    clickableIcons: false,
+  });
+
+  // 現在地マーカー（青い丸）
+  new google.maps.Marker({
+    position: { lat: userLocation.lat, lng: userLocation.lng },
+    map: visibleMap,
+    title: '現在地',
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 10,
+      fillColor: '#4A9FDB',
+      fillOpacity: 1,
+      strokeColor: '#ffffff',
+      strokeWeight: 3,
+    },
+    zIndex: 10,
+  });
+
+  // レストランマーカー
+  placesWithDist.forEach(({ place, distance }, i) => {
+    const lat = typeof place.geometry.location.lat === 'function'
+      ? place.geometry.location.lat() : place.geometry.location.lat;
+    const lng = typeof place.geometry.location.lng === 'function'
+      ? place.geometry.location.lng() : place.geometry.location.lng;
+
+    const marker = new google.maps.Marker({
+      position: { lat, lng },
+      map: visibleMap,
+      title: place.name,
+      label: { text: String(i + 1), color: '#fff', fontWeight: 'bold', fontSize: '13px' },
+    });
+    marker.addListener('click', () => showDetail(place, distance));
+    mapMarkers.push(marker);
+  });
+}
+
 // ===== UI ヘルパー =====
-function showLoading(show) {
-  loading.classList.toggle('hidden', !show);
-}
-
-function showError(message) {
-  errorMsg.textContent = message;
-  errorBox.classList.remove('hidden');
-}
-
-function hideError() {
-  errorBox.classList.add('hidden');
-}
-
-function clearResults() {
-  results.innerHTML = '';
-}
+function showLoading(show) { loading.classList.toggle('hidden', !show); }
+function showError(msg) { errorMsg.textContent = msg; errorBox.classList.remove('hidden'); }
+function hideError() { errorBox.classList.add('hidden'); }
+function clearResults() { resultsEl.innerHTML = ''; resultsMap.classList.add('hidden'); }
 
 // ===== レストランカードを生成 =====
-function createRestaurantCard(place, distance) {
+function createRestaurantCard(place, distance, index) {
   const openStatus = getOpenStatus(place.opening_hours);
-  const menu = getRecommendedMenu(place.types);
   const cuisine = getCuisineLabel(place.types);
   const hoursData = formatOpeningHours(place.opening_hours);
 
   const card = document.createElement('div');
   card.className = 'restaurant-card';
 
-  // 営業中バッジ
+  // 写真 URL
+  const photoUrl = place.photos?.[0]?.getUrl({ maxWidth: 600, maxHeight: 200 });
+
   const statusBadge = openStatus === 'open'
     ? `<span class="badge badge-open">✅ 営業中</span>`
     : openStatus === 'closed'
       ? `<span class="badge badge-closed">🔴 営業時間外</span>`
       : `<span class="badge badge-unknown">⏰ 時間不明</span>`;
 
-  // 今日の営業時間
   let todayHours = '';
   if (hoursData) {
     const today = hoursData.find((h) => h.isToday);
@@ -331,6 +320,10 @@ function createRestaurantCard(place, distance) {
   }
 
   card.innerHTML = `
+    ${photoUrl
+      ? `<img class="card-photo" src="${photoUrl}" alt="${escapeHtml(place.name)}" loading="lazy">`
+      : `<div class="card-photo-placeholder">🍽️</div>`}
+    <div class="card-number">${index + 1}</div>
     <div class="restaurant-card-header">
       <p class="restaurant-name">${escapeHtml(place.name)}</p>
       <div class="restaurant-meta">
@@ -341,25 +334,14 @@ function createRestaurantCard(place, distance) {
       </div>
     </div>
     <div class="restaurant-card-body">
-      ${todayHours
-        ? `<div class="info-row">
-            <span class="info-icon">🕐</span>
-            <span class="info-text"><strong>本日：</strong>${escapeHtml(todayHours)}</span>
-          </div>`
-        : `<div class="info-row">
-            <span class="info-icon">🕐</span>
-            <span class="info-text">営業時間情報なし</span>
-          </div>`
-      }
       <div class="info-row">
-        <span class="info-icon">🍴</span>
-        <span class="info-text"><strong>おすすめ：</strong></span>
-      </div>
-      <div class="menu-tags">
-        ${menu.slice(0, 3).map((item) => `<span class="menu-tag">${escapeHtml(item)}</span>`).join('')}
+        <span class="info-icon">🕐</span>
+        <span class="info-text">
+          ${todayHours ? `<strong>本日：</strong>${escapeHtml(todayHours)}` : '営業時間情報なし'}
+        </span>
       </div>
     </div>
-    <div class="detail-btn">詳細を見る →</div>
+    <div class="detail-btn">詳細・AI解説を見る →</div>
   `;
 
   card.addEventListener('click', () => showDetail(place, distance));
@@ -369,34 +351,35 @@ function createRestaurantCard(place, distance) {
 // ===== 詳細モーダルを表示 =====
 async function showDetail(place, distance) {
   modalContent.innerHTML = '<div class="loading"><div class="spinner"></div><p>詳細を読み込み中...</p></div>';
-  modalOverlay.classList.remove('hidden');
+  $('modalOverlay').classList.remove('hidden');
 
   try {
     const detail = await getPlaceDetails(place.place_id);
     renderModalContent(detail, distance);
   } catch (e) {
-    // Nearby Search の情報でフォールバック
     renderModalContent(place, distance);
   }
 }
 
 function renderModalContent(detail, distance) {
   const openStatus = getOpenStatus(detail.opening_hours);
-  const menu = getRecommendedMenu(detail.types);
   const cuisine = getCuisineLabel(detail.types);
   const hoursData = formatOpeningHours(detail.opening_hours);
-  const lat = detail.geometry?.location?.lat?.() ?? detail.geometry?.location?.lat;
-  const lng = detail.geometry?.location?.lng?.() ?? detail.geometry?.location?.lng;
+  const lat = typeof detail.geometry?.location?.lat === 'function'
+    ? detail.geometry.location.lat() : detail.geometry?.location?.lat;
+  const lng = typeof detail.geometry?.location?.lng === 'function'
+    ? detail.geometry.location.lng() : detail.geometry?.location?.lng;
 
-  const statusLabel = openStatus === 'open' ? '✅ 営業中' : openStatus === 'closed' ? '🔴 営業時間外' : '⏰ 時間不明';
+  const statusLabel = openStatus === 'open' ? '✅ 営業中'
+    : openStatus === 'closed' ? '🔴 営業時間外' : '⏰ 時間不明';
+
+  const photoUrl = detail.photos?.[0]?.getUrl({ maxWidth: 800, maxHeight: 300 });
 
   let hoursHtml = '';
-  if (hoursData && hoursData.length) {
-    hoursHtml = `
-      <ul class="hours-list">
-        ${hoursData.map((h) => `<li class="${h.isToday ? 'today' : ''}">${escapeHtml(h.text)}</li>`).join('')}
-      </ul>
-    `;
+  if (hoursData?.length) {
+    hoursHtml = `<ul class="hours-list">${hoursData.map((h) =>
+      `<li class="${h.isToday ? 'today' : ''}">${escapeHtml(h.text)}</li>`
+    ).join('')}</ul>`;
   } else {
     hoursHtml = '<p class="info-text">営業時間の情報がありません。</p>';
   }
@@ -406,27 +389,28 @@ function renderModalContent(detail, distance) {
     : `https://maps.google.com/?q=${encodeURIComponent(detail.name)}`;
 
   modalContent.innerHTML = `
+    ${photoUrl ? `<img class="modal-photo" src="${photoUrl}" alt="${escapeHtml(detail.name)}" loading="lazy">` : ''}
     <h2>${escapeHtml(detail.name)}</h2>
     <div class="restaurant-meta" style="margin:8px 0 0">
       ${detail.rating ? `<span class="badge badge-rating">⭐ ${detail.rating}（${detail.user_ratings_total || '?'}件）</span>` : ''}
       <span class="badge badge-distance">📍 ${formatDistance(distance)}</span>
       <span class="badge badge-unknown">${escapeHtml(cuisine)}</span>
     </div>
-    ${detail.editorial_summary?.overview
-      ? `<p style="margin-top:12px;font-size:0.875rem;color:#555;line-height:1.5;">${escapeHtml(detail.editorial_summary.overview)}</p>`
-      : ''}
+
+    <div class="modal-section">
+      <h3>✨ AI解説</h3>
+      <div class="ai-box">
+        <div id="aiRecommendSection" class="ai-loading">
+          <div class="spinner"></div>
+          <span>AIが解説を生成中...</span>
+        </div>
+      </div>
+    </div>
 
     <div class="modal-section">
       <h3>⏰ 営業時間</h3>
       <p style="font-size:0.85rem;font-weight:600;margin-bottom:6px;">${statusLabel}</p>
       ${hoursHtml}
-    </div>
-
-    <div class="modal-section">
-      <h3>🍴 おすすめメニュー</h3>
-      <div class="menu-tags">
-        ${menu.map((item) => `<span class="menu-tag">${escapeHtml(item)}</span>`).join('')}
-      </div>
     </div>
 
     ${detail.formatted_phone_number
@@ -440,12 +424,50 @@ function renderModalContent(detail, distance) {
       🗺️ Google マップで開く
     </a>
   `;
+
+  // AI解説を非同期で取得
+  fetchAIRecommendation(detail);
+}
+
+// ===== AI解説の取得 =====
+async function fetchAIRecommendation(detail) {
+  const section = $('aiRecommendSection');
+  if (!section) return;
+
+  try {
+    const res = await fetch('/api/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: detail.name,
+        types: detail.types,
+        rating: detail.rating,
+        vicinity: detail.vicinity || '',
+        priceLevel: detail.price_level,
+      }),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (data.recommendation) {
+      section.className = '';
+      section.innerHTML = `<p class="ai-recommendation">${escapeHtml(data.recommendation)}</p>`;
+    } else {
+      throw new Error('empty');
+    }
+  } catch {
+    if (section) {
+      section.className = '';
+      section.innerHTML = '<p class="info-text" style="font-size:0.85rem;">AI解説を取得できませんでした。</p>';
+    }
+  }
 }
 
 // モーダルを閉じる
-modalClose.addEventListener('click', () => modalOverlay.classList.add('hidden'));
-modalOverlay.addEventListener('click', (e) => {
-  if (e.target === modalOverlay) modalOverlay.classList.add('hidden');
+$('modalClose').addEventListener('click', () => $('modalOverlay').classList.add('hidden'));
+$('modalOverlay').addEventListener('click', (e) => {
+  if (e.target === $('modalOverlay')) $('modalOverlay').classList.add('hidden');
 });
 
 // ===== メイン検索フロー =====
@@ -462,44 +484,44 @@ async function doSearch() {
   searchBtn.disabled = true;
 
   try {
-    // 1. 現在地取得
     locationText.textContent = '現在地を取得中...';
     userLocation = await getCurrentLocation();
 
-    // 2. 住所を逆ジオコーディング（Google Maps API が使えない場合は座標表示）
     if (typeof google !== 'undefined') {
-      const addr = await reverseGeocode(userLocation.lat, userLocation.lng);
-      locationText.textContent = addr;
+      locationText.textContent = await reverseGeocode(userLocation.lat, userLocation.lng);
     } else {
       locationText.textContent = `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`;
     }
 
-    // 3. 近くのレストランを検索
     const places = await searchNearbyRestaurants(userLocation);
-
     showLoading(false);
 
     if (places.length === 0) {
-      results.innerHTML = `
+      resultsEl.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">🍽️</div>
           <p>半径${NEARBY_RADIUS}m以内にレストランが見つかりませんでした。<br>場所を変えてもう一度お試しください。</p>
-        </div>
-      `;
+        </div>`;
       return;
     }
 
-    // 4. 距離を計算してカードを生成
-    for (const place of places) {
+    // 距離を計算
+    const placesWithDist = places.map((place) => {
       const lat = typeof place.geometry.location.lat === 'function'
-        ? place.geometry.location.lat()
-        : place.geometry.location.lat;
+        ? place.geometry.location.lat() : place.geometry.location.lat;
       const lng = typeof place.geometry.location.lng === 'function'
-        ? place.geometry.location.lng()
-        : place.geometry.location.lng;
-      const dist = calcDistance(userLocation.lat, userLocation.lng, lat, lng);
-      results.appendChild(createRestaurantCard(place, dist));
-    }
+        ? place.geometry.location.lng() : place.geometry.location.lng;
+      return { place, distance: calcDistance(userLocation.lat, userLocation.lng, lat, lng) };
+    });
+
+    // 地図を表示
+    showResultsMap(placesWithDist);
+
+    // カードを生成
+    placesWithDist.forEach(({ place, distance }, i) => {
+      resultsEl.appendChild(createRestaurantCard(place, distance, i));
+    });
+
   } catch (err) {
     showLoading(false);
     showError(err.message || '予期せぬエラーが発生しました。');
@@ -525,9 +547,6 @@ function escapeHtml(str) {
 // ===== 起動時処理 =====
 (function init() {
   const key = getApiKey();
-  if (key) {
-    loadGoogleMapsAPI();
-  } else {
-    locationText.textContent = '設定から API キーを入力してください';
-  }
+  if (key) loadGoogleMapsAPI();
+  else locationText.textContent = '設定から API キーを入力してください';
 })();
