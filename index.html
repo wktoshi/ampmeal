@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#FF6B35">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AmpMeal">
+  <meta name="description" content="現在地から最寄りレストランの情報を表示するアプリ">
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+  <title>AmpMeal - 近くのレストランを探す</title>
+</head>
+<body>
+  <!-- ヘッダー -->
+  <header class="header">
+    <div class="header-inner">
+      <h1 class="app-title">🍽️ AmpMeal</h1>
+      <button class="settings-btn" id="settingsBtn" aria-label="設定">⚙️</button>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="main">
+
+    <!-- API キー設定パネル -->
+    <div class="settings-panel hidden" id="settingsPanel">
+      <div class="card settings-card">
+        <h2>設定</h2>
+        <p class="settings-desc">Google Places API キーを入力してください。<br>
+          <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>から取得できます。
+        </p>
+        <label for="apiKeyInput" class="input-label">API キー</label>
+        <input type="text" id="apiKeyInput" class="text-input" placeholder="AIzaSy..." autocomplete="off" spellcheck="false">
+        <button class="btn btn-primary" id="saveApiKey">保存</button>
+        <button class="btn btn-secondary" id="closeSettings">閉じる</button>
+      </div>
+    </div>
+
+    <!-- 現在地表示 -->
+    <div class="location-bar" id="locationBar">
+      <span class="location-icon">📍</span>
+      <span class="location-text" id="locationText">現在地を取得中...</span>
+    </div>
+
+    <!-- 検索ボタン -->
+    <div class="search-section">
+      <button class="btn btn-search" id="searchBtn">
+        <span class="btn-icon">🔍</span>
+        <span>近くのレストランを検索</span>
+      </button>
+    </div>
+
+    <!-- ローディング -->
+    <div class="loading hidden" id="loading">
+      <div class="spinner"></div>
+      <p>レストランを検索中...</p>
+    </div>
+
+    <!-- エラーメッセージ -->
+    <div class="error-box hidden" id="errorBox">
+      <p id="errorMsg"></p>
+      <button class="btn btn-secondary" id="retryBtn">再試行</button>
+    </div>
+
+    <!-- レストランカード一覧 -->
+    <div class="results" id="results"></div>
+
+  </main>
+
+  <!-- レストラン詳細モーダル -->
+  <div class="modal-overlay hidden" id="modalOverlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

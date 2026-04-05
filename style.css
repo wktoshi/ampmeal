@@ -1,0 +1,537 @@
+/* ===== リセット & 基本設定 ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --primary: #FF6B35;
+  --primary-dark: #E55A28;
+  --secondary: #FFF3EE;
+  --text: #1A1A1A;
+  --text-muted: #666;
+  --border: #E8E8E8;
+  --card-bg: #FFFFFF;
+  --bg: #F5F5F5;
+  --success: #34C759;
+  --warning: #FF9500;
+  --radius: 16px;
+  --shadow: 0 2px 16px rgba(0,0,0,0.08);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: calc(20px + var(--safe-bottom));
+}
+
+/* ===== ヘッダー ===== */
+.header {
+  background: var(--primary);
+  color: white;
+  padding-top: calc(16px + var(--safe-top));
+  padding-bottom: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(255,107,53,0.3);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+.app-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.settings-btn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-btn:active {
+  background: rgba(255,255,255,0.35);
+}
+
+/* ===== メイン ===== */
+.main {
+  padding: 16px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* ===== 設定パネル ===== */
+.settings-panel {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: var(--safe-bottom);
+}
+
+.settings-card {
+  width: 100%;
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 24px 20px;
+}
+
+.settings-desc {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.settings-desc a {
+  color: var(--primary);
+}
+
+.input-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.text-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: monospace;
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 12px;
+}
+
+.text-input:focus {
+  border-color: var(--primary);
+}
+
+/* ===== カード ===== */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+/* ===== 現在地バー ===== */
+.location-bar {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  min-height: 48px;
+}
+
+.location-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.location-text {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ===== 検索ボタン ===== */
+.search-section {
+  margin-bottom: 16px;
+}
+
+/* ===== ボタン共通 ===== */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  margin-bottom: 8px;
+}
+
+.btn-primary:active {
+  background: var(--primary-dark);
+}
+
+.btn-secondary {
+  background: var(--border);
+  color: var(--text);
+}
+
+.btn-search {
+  background: var(--primary);
+  color: white;
+  font-size: 1.05rem;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(255,107,53,0.35);
+}
+
+.btn-search:active {
+  background: var(--primary-dark);
+}
+
+.btn-icon {
+  font-size: 1.1rem;
+}
+
+/* ===== ローディング ===== */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 0;
+  color: var(--text-muted);
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== エラーボックス ===== */
+.error-box {
+  background: #FFF2F2;
+  border: 1.5px solid #FFB3B3;
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.error-box p {
+  color: #CC3333;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.error-box .btn-secondary {
+  background: white;
+  border: 1.5px solid #FFB3B3;
+  color: #CC3333;
+}
+
+/* ===== レストランカード ===== */
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.restaurant-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.restaurant-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+}
+
+.restaurant-card-header {
+  padding: 16px 16px 12px;
+}
+
+.restaurant-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.restaurant-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.badge-rating {
+  background: #FFF3CD;
+  color: #856404;
+}
+
+.badge-distance {
+  background: #E8F4FD;
+  color: #0369A1;
+}
+
+.badge-open {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.badge-closed {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.badge-unknown {
+  background: var(--border);
+  color: var(--text-muted);
+}
+
+.restaurant-card-body {
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 12px;
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-icon {
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.info-text {
+  color: var(--text-muted);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.info-text strong {
+  color: var(--text);
+}
+
+.detail-btn {
+  display: block;
+  text-align: center;
+  padding: 10px;
+  background: var(--secondary);
+  color: var(--primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-top: 1px solid #FFE0D4;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.detail-btn:active {
+  background: #FFE0D4;
+}
+
+/* ===== 営業時間 ===== */
+.hours-list {
+  list-style: none;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.8;
+}
+
+.hours-list .today {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ===== おすすめメニュー ===== */
+.menu-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.menu-tag {
+  background: var(--secondary);
+  color: var(--primary-dark);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+/* ===== モーダル ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 300;
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: var(--safe-bottom);
+}
+
+.modal {
+  background: var(--card-bg);
+  border-radius: var(--radius) var(--radius) 0 0;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 24px 20px;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: var(--border);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.modal h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  padding-right: 40px;
+  line-height: 1.3;
+}
+
+.modal-section {
+  margin-top: 20px;
+}
+
+.modal-section h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ===== Google Map ボタン ===== */
+.map-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: var(--primary);
+  color: white;
+  border-radius: 10px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-top: 16px;
+}
+
+.map-btn:active {
+  background: var(--primary-dark);
+}
+
+/* ===== ユーティリティ ===== */
+.hidden {
+  display: none !important;
+}
+
+/* ===== 空状態 ===== */
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-muted);
+}
+
+.empty-state .empty-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.empty-state p {
+  font-size: 0.9rem;
+  line-height: 1.6;
+}

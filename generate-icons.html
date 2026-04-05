@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<!-- このファイルはアイコン生成用の補助ファイルです。ブラウザで開いてアイコンを保存できます。 -->
+<html>
+<head><title>Icon Generator</title></head>
+<body>
+<script>
+function generateIcon(size) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  // 背景
+  ctx.fillStyle = '#FF6B35';
+  ctx.beginPath();
+  ctx.roundRect(0, 0, size, size, size * 0.2);
+  ctx.fill();
+
+  // 絵文字
+  ctx.font = `${size * 0.55}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🍽️', size / 2, size / 2);
+
+  return canvas.toDataURL('image/png');
+}
+
+// 192x192
+const a192 = document.createElement('a');
+a192.href = generateIcon(192);
+a192.download = 'icon-192.png';
+a192.textContent = 'icon-192.png をダウンロード';
+document.body.appendChild(a192);
+document.body.appendChild(document.createElement('br'));
+
+// 512x512
+const a512 = document.createElement('a');
+a512.href = generateIcon(512);
+a512.download = 'icon-512.png';
+a512.textContent = 'icon-512.png をダウンロード';
+document.body.appendChild(a512);
+</script>
+</body>
+</html>
