@@ -283,6 +283,30 @@ body {
   box-shadow: var(--shadow);
 }
 
+/* 地図上の再検索ボタン */
+.map-search-btn {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: white;
+  color: var(--primary-dark);
+  border: 2px solid var(--primary);
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.map-search-btn:active {
+  background: var(--secondary);
+}
+
 /* ===== レストランカード ===== */
 .results {
   display: flex;

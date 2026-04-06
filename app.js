@@ -243,6 +243,8 @@ function showResultsMap(placesWithDist) {
   mapMarkers = [];
 
   resultsMap.classList.remove('hidden');
+  // 既存の「この付近を検索」ボタンを削除
+  document.getElementById('mapSearchBtn')?.remove();
 
   visibleMap = new google.maps.Map(resultsMap, {
     center: { lat: userLocation.lat, lng: userLocation.lng },
@@ -250,6 +252,37 @@ function showResultsMap(placesWithDist) {
     disableDefaultUI: true,
     zoomControl: true,
     clickableIcons: false,
+  });
+
+  // 「この付近を検索」ボタンを地図上に作成
+  const mapSearchBtn = document.createElement('button');
+  mapSearchBtn.id = 'mapSearchBtn';
+  mapSearchBtn.className = 'map-search-btn hidden';
+  mapSearchBtn.textContent = '📍 この付近を検索';
+  resultsMap.appendChild(mapSearchBtn);
+
+  // 地図をドラッグしたらボタンを表示
+  visibleMap.addListener('dragend', () => {
+    mapSearchBtn.classList.remove('hidden');
+  });
+
+  // ボタンをタップしたら地図中心で再検索
+  mapSearchBtn.addEventListener('click', async () => {
+    mapSearchBtn.classList.add('hidden');
+    const center = visibleMap.getCenter();
+    userLocation = { lat: center.lat(), lng: center.lng() };
+    locationText.textContent = 'この付近';
+    resultsEl.innerHTML = '';
+    showLoading(true);
+    searchBtn.disabled = true;
+    try {
+      await runSearch();
+    } catch (err) {
+      showLoading(false);
+      showError(err.message || '予期せぬエラーが発生しました。');
+    } finally {
+      searchBtn.disabled = false;
+    }
   });
 
   // 現在地マーカー（青い丸）
@@ -490,37 +523,10 @@ async function doSearch() {
     if (typeof google !== 'undefined') {
       locationText.textContent = await reverseGeocode(userLocation.lat, userLocation.lng);
     } else {
-      locationText.textContent = `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`;
+      locationText.textContent = '現在地を取得しました';
     }
 
-    const places = await searchNearbyRestaurants(userLocation);
-    showLoading(false);
-
-    if (places.length === 0) {
-      resultsEl.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">🍽️</div>
-          <p>半径${NEARBY_RADIUS}m以内にレストランが見つかりませんでした。<br>場所を変えてもう一度お試しください。</p>
-        </div>`;
-      return;
-    }
-
-    // 距離を計算
-    const placesWithDist = places.map((place) => {
-      const lat = typeof place.geometry.location.lat === 'function'
-        ? place.geometry.location.lat() : place.geometry.location.lat;
-      const lng = typeof place.geometry.location.lng === 'function'
-        ? place.geometry.location.lng() : place.geometry.location.lng;
-      return { place, distance: calcDistance(userLocation.lat, userLocation.lng, lat, lng) };
-    });
-
-    // 地図を表示
-    showResultsMap(placesWithDist);
-
-    // カードを生成
-    placesWithDist.forEach(({ place, distance }, i) => {
-      resultsEl.appendChild(createRestaurantCard(place, distance, i));
-    });
+    await runSearch();
 
   } catch (err) {
     showLoading(false);
@@ -528,6 +534,36 @@ async function doSearch() {
   } finally {
     searchBtn.disabled = false;
   }
+}
+
+// ===== 指定済みの userLocation でレストランを検索（地図中心再検索でも共用）=====
+async function runSearch() {
+  const places = await searchNearbyRestaurants(userLocation);
+  showLoading(false);
+
+  if (places.length === 0) {
+    resultsEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🍽️</div>
+        <p>この付近にレストランが見つかりませんでした。<br>地図を移動して再検索してください。</p>
+      </div>`;
+    showResultsMap([]);
+    return;
+  }
+
+  // 距離を計算
+  const placesWithDist = places.map((place) => {
+    const lat = typeof place.geometry.location.lat === 'function'
+      ? place.geometry.location.lat() : place.geometry.location.lat;
+    const lng = typeof place.geometry.location.lng === 'function'
+      ? place.geometry.location.lng() : place.geometry.location.lng;
+    return { place, distance: calcDistance(userLocation.lat, userLocation.lng, lat, lng) };
+  });
+
+  showResultsMap(placesWithDist);
+  placesWithDist.forEach(({ place, distance }, i) => {
+    resultsEl.appendChild(createRestaurantCard(place, distance, i));
+  });
 }
 
 searchBtn.addEventListener('click', doSearch);
