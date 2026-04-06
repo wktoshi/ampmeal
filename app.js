@@ -54,10 +54,30 @@ const modalOverlay    = $('modalOverlay');
 const modalClose      = $('modalClose');
 const modalContent    = $('modalContent');
 
-// ===== Service Worker 登録 =====
+// ===== Service Worker 登録（自動更新検知）=====
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(console.warn);
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      // 新しいSWが見つかったら即インストール
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // 旧SWが存在する状態で新SWがインストールされた = 更新あり
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+    }).catch(console.warn);
+
+    // SWが切り替わったらページをリロード（無限ループ防止フラグ付き）
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
   });
 }
 

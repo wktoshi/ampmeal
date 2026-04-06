@@ -24,7 +24,11 @@ export default async function handler(req, res) {
   const cuisine = getCuisineLabel(types);
   const priceStr = priceLevel ? '¥'.repeat(Number(priceLevel)) : '';
 
-  const prompt = `あなたはグルメガイドのライターです。以下のレストラン情報をもとに、訪問者へのおすすめポイントを自然な日本語で2〜3文（100文字以内）で書いてください。メニューの特徴、雰囲気、おすすめの利用シーンなどを含めてください。
+  const prompt = `あなたはグルメガイドのライターです。以下のレストラン情報をもとに、訪問者へのおすすめポイントを自然な日本語で書いてください。
+
+必ず以下の2つを含めてください：
+1. このお店の雰囲気・特徴・おすすめシーン（1〜2文）
+2. 具体的なおすすめメニュー名を2〜3品（例:「○○」「△△」「□□」のような形式）
 
 レストラン名: ${name}
 ジャンル: ${cuisine}
@@ -43,7 +47,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        max_tokens: 200,
+        max_tokens: 300,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
